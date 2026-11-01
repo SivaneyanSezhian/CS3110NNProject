@@ -1,1 +1,4 @@
-# cs3110_nn_project
+# Project: Neural Networks with OCaml
+
+Name: Neyan Sezhian  
+NetID: ss4458  
