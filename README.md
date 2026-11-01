@@ -3,5 +3,5 @@
 Name: Neyan Sezhian  
 NetID: ss4458  
 
-Name: Xinwei Huang
+Name: Xinwei Huang  
 NetID: xh423
