@@ -1,0 +1,4 @@
+profile = conventional
+break-cases = fit-or-vertical
+type-decl = sparse
+wrap-comments = true
