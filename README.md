@@ -8,3 +8,6 @@ NetID: xh423
 
 Name: Jefferson Ji
 NetID: jj824
+
+Name: Theo Oltean
+NetID: tio3
