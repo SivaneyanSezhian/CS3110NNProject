@@ -6,8 +6,8 @@ NetID: ss4458
 Name: Xinwei Huang  
 NetID: xh423
 
-Name: Jefferson Ji
+Name: Jefferson Ji  
 NetID: jj824
 
-Name: Theo Oltean
+Name: Theo Oltean  
 NetID: tio3

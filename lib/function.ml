@@ -112,3 +112,18 @@ let exp = { f_1 = (fun x -> exp x); grad_1 = (fun x -> x) }
 let sum_f = List.fold_left (fun acc x -> acc +. x) 0.
 let grad_f lst = List.fold_left (fun acc x -> 1. :: acc) [] lst
 let sum_n = { f_n = sum_f; grad_n = grad_f }
+let sig_f_1 x = 1. /. (1. +. Stdlib.exp (-.x))
+
+let sig_grad_1 x =
+  let y = sig_f_1 x in
+  y *. (1. -. y)
+
+let sig_f = { f_1 = sig_f_1; grad_1 = sig_grad_1 }
+
+let relu_f =
+  {
+    f_1 = (fun x -> if x > 0. then x else 0.);
+    grad_1 = (fun x -> if x > 0. then 1. else 0.);
+  }
+
+let tanh_f = { f_1 = tanh; grad_1 = (fun x -> 1. -. (tanh x ** 2.)) }

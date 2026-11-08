@@ -357,3 +357,11 @@ let flatten_one tnsr =
 
 let rec flatten_k tnsr k =
   if k = 0 then tnsr else flatten_k (flatten_one tnsr) (k - 1)
+
+(** [sum_elements x] returns the float sum of all elements in [x]. *)
+let rec sum = function
+  | Zero x -> x
+  | Pos t -> Array.fold_left (fun acc child -> acc +. sum child) 0.0 t.ndarray
+
+(** [size x] is the number of the elements in [x]. *)
+let size x = List.fold_left ( * ) 1 (get_dims x)
