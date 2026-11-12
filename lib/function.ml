@@ -23,22 +23,31 @@ type nfunction =
   | Var of string
   | Function of primitive_function * nfunction list
 
+(** [get_first lst] gets the first element of list [lst], raising
+    [Failure "No first element"] if none exists. *)
 let get_first lst =
   match lst with
   | h :: t -> h
   | _ -> raise (failwith "No first element")
 
+(** [get_second lst] gets the second element of list [lst], raising
+    [Failure "No second element"] if none exists. *)
 let get_second lst =
   match lst with
   | h1 :: h2 :: t -> h2
   | _ -> raise (failwith "No second element")
 
+(** [eval_prim prim_f args] evaluates the primitive function [prim_f] with the
+    given [args] in the order listed. *)
 let eval_prim prim_f args =
   match prim_f with
   | Unary f -> f.f_1 (get_first args)
   | Binary f -> f.f_2 (get_first args, get_second args)
   | Nary f -> f.f_n args
 
+(** [eval nfunc assignments] evaluates [nfunc] with the assignments specified in
+    [assignments]. Raises [Not_found] if a variable included is not given an
+    assignment. *)
 let rec eval nfunc assignments =
   match nfunc with
   | Const x -> x
@@ -48,6 +57,8 @@ let rec eval nfunc assignments =
         (List.rev
            (List.fold_left (fun acc nf -> eval nf assignments :: acc) [] args))
 
+(** [list_grad prim_f args] computes the gradient of [prim_f] with respect to
+    its arguments when evaluated at [args]. *)
 let list_grad prim_f =
   match prim_f with
   | Unary f -> fun args -> [ f.grad_1 (get_first args) ]
@@ -57,13 +68,20 @@ let list_grad prim_f =
         [ g1; g2 ]
   | Nary f -> fun args -> f.grad_n args
 
+(** [mult_assoc factor v] multiplies the [a] value in each [(x, a)] pair in
+    association list [v] by [factor]. *)
 let mult_assoc factor v = List.map (fun (x, a) -> (x, factor *. a)) v
 
+(** [assoc_or_zero v assoc] is like [List.assoc], but returns [0.] instead of
+    raising an exception when failing to find an element. *)
 let assoc_or_zero v assoc =
   match List.assoc_opt v assoc with
   | None -> 0.
   | Some x -> x
 
+(** [add_assoc assoc1 assoc2] adds the values associated with each key in
+    [assoc1] and [assoc2]. If a key is missing in either list, its value is
+    assumed to be [0.]. *)
 let add_assoc assoc1 assoc2 =
   let assoc1' =
     List.map
@@ -77,6 +95,10 @@ let add_assoc assoc1 assoc2 =
   in
   List.sort_uniq Stdlib.compare (assoc1' @ assoc2')
 
+(** [grad_prim prim_f args grad_lst] computes the gradient of [prim_f] evaluated
+    at [args] with respect to each of the variables specified in [grad_lst],
+    where [grad_list] is the gradient of [prim_f] in each argument with respect
+    to the given variables. *)
 let grad_prim prim_f args grad_lst =
   let df = list_grad prim_f args in
   let deltas =
@@ -84,6 +106,9 @@ let grad_prim prim_f args grad_lst =
   in
   List.fold_left (fun acc delta -> add_assoc acc delta) [] deltas
 
+(** [grad_layer_rec nfunc assignments] computes the gradient of [nfunc] with
+    respect to each variable in [assignments] evaluated at the point
+    corresponding to the values specified in [assignments]. *)
 let rec grad_layer_rec nfunc assignments =
   match nfunc with
   | Const x -> (x, [])
