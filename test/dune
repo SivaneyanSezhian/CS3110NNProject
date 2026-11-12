@@ -1,3 +1,7 @@
 (test
  (name test_CS3110NNProject)
  (libraries CS3110NNProject))
+
+(test
+ (name test_training)
+ (libraries CS3110NNProject))
