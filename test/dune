@@ -3,5 +3,9 @@
  (libraries CS3110NNProject))
 
 (test
+ (name test_autograd)
+ (libraries CS3110NNProject))
+
+(test
  (name test_training)
  (libraries CS3110NNProject))
