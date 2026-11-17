@@ -7,5 +7,9 @@
  (libraries CS3110NNProject))
 
 (test
+ (name test_mlp)
+ (libraries CS3110NNProject))
+
+(test
  (name test_training)
  (libraries CS3110NNProject))
