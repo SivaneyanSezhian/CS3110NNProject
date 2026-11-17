@@ -229,7 +229,7 @@ let get_first_other_dims tnsr =
 (** [wrap tnsr] wraps [tnsr] in a one-dimensional tensor. *)
 let wrap tnsr = Pos { dims = 1 :: get_dims tnsr; ndarray = [| tnsr |] }
 
-(** [wrap tnsr] wraps [tnsr] in a one-dimensional tensor [k] times. *)
+(** [wrap_k tnsr k] wraps [tnsr] in a one-dimensional tensor [k] times. *)
 let rec wrap_k tnsr k = if k = 0 then tnsr else wrap_k (wrap tnsr) (k - 1)
 
 (** [flatten_tensor_array tnsr_array] flattens [tnsr_array] into an array of
@@ -345,8 +345,8 @@ let get_single i_lst =
   | h :: _ -> h
   | _ -> raise (failwith "not single")
 
-(** [tensor_of_float flt] returns [flt] as a zero-dimensional tensor. *)
-let tensor_of_float flt = Zero flt
+(** [tensor_of x] returns [x] as a zero-dimensional tensor. *)
+let tensor_of x = Zero x
 
 (** [tensor_of_1d_array arr] returns [arr] as a one-dimensional tensor. *)
 let tensor_of_1d_array arr =
@@ -409,7 +409,7 @@ let swap_dims tnsr i j =
       make_tensor (swap x.dims i j) (fun indx_lst ->
           lookup tnsr (swap indx_lst i j))
 
-(** [swap_dims tnsr i j] permutes the coordinates of [tnsr] with [prm]. *)
+(** [permute_dims tnsr prm] permutes the coordinates of [tnsr] with [prm]. *)
 let permute_dims tnsr prm =
   match tnsr with
   | Zero x -> tnsr

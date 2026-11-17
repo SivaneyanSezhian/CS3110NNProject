@@ -95,6 +95,13 @@ let add_assoc assoc1 assoc2 =
   in
   List.sort_uniq Stdlib.compare (assoc1' @ assoc2')
 
+(** [fold_left2_short] is like [List.fold_left2], but it stops at the end of the
+    shorter list instead of raising an exception. *)
+let rec fold_left2_short f acc lst1 lst2 =
+  match (lst1, lst2) with
+  | h1 :: t1, h2 :: t2 -> fold_left2_short f (f acc h1 h2) t1 t2
+  | _ -> acc
+
 (** [grad_prim prim_f args grad_lst] computes the gradient of [prim_f] evaluated
     at [args] with respect to each of the variables specified in [grad_lst],
     where [grad_list] is the gradient of [prim_f] in each argument with respect
@@ -102,12 +109,12 @@ let add_assoc assoc1 assoc2 =
 let grad_prim prim_f args grad_lst =
   let df = list_grad prim_f args in
   let deltas =
-    List.fold_left2 (fun acc d v -> mult_assoc d v :: acc) [] df grad_lst
+    fold_left2_short (fun acc d v -> mult_assoc d v :: acc) [] df grad_lst
   in
   List.fold_left (fun acc delta -> add_assoc acc delta) [] deltas
 
-(** [grad_layer_rec nfunc assignments] computes the gradient of [nfunc] with
-    respect to each variable in [assignments] evaluated at the point
+(** [grad_layer nfunc assignments] computes the value and gradient of [nfunc]
+    with respect to each variable in [assignments] evaluated at the point
     corresponding to the values specified in [assignments]. *)
 let rec grad_layer_rec nfunc assignments =
   match nfunc with
@@ -120,6 +127,11 @@ let rec grad_layer_rec nfunc assignments =
       let args = List.map fst arg_grad_lst in
       let grad_lst = List.map snd arg_grad_lst in
       (eval_prim prim_f args, grad_prim prim_f args grad_lst)
+
+(** [grad_layer_rec nfunc assignments] computes the gradient of [nfunc] with
+    respect to each variable in [assignments] evaluated at the point
+    corresponding to the values specified in [assignments]. *)
+let rec grad_layer nfunc assignments = snd (grad_layer_rec nfunc assignments)
 
 let id = { f_1 = (fun x -> x); grad_1 = (fun _ -> 1.) }
 let id_nary = { f_n = get_first; grad_n = (fun _ -> [ 1. ]) }

@@ -3,6 +3,14 @@
  (libraries CS3110NNProject))
 
 (test
+ (name test_tensor)
+ (libraries CS3110NNProject))
+
+ (test
+ (name test_function)
+ (libraries CS3110NNProject))
+
+(test
  (name test_autograd)
  (libraries CS3110NNProject))
 

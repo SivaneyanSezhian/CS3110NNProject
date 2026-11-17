@@ -2,7 +2,7 @@ open CS3110NNProject
 module A = Autograd
 module T = Tensor
 
-let scalar = T.tensor_of_float
+let scalar = T.tensor_of
 let vector = T.tensor_of_1d_list
 let matrix = T.tensor_of_2d_list
 
