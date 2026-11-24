@@ -135,6 +135,44 @@ let test_nested_mse () =
   assert_tensor (A.grad inner) (scalar 8.);
   assert_tensor (A.grad x) (scalar 32.)
 
+let test_bce_loss () =
+  let pred = A.make (vector [ 0.8; 0.2 ]) in
+  let target = T.tensor_of_1d_list [ 1.; 0. ] in
+  let loss = A.bce_loss pred target in
+  assert_tensor (A.value loss) (scalar (-.log 0.8));
+  A.backward loss;
+  assert_tensor (A.grad pred) (vector [ -0.625; 0.625 ]);
+  A.backward (A.add loss loss);
+  assert_tensor (A.grad pred) (vector [ -1.25; 1.25 ]);
+  (* Check that the backward rule differentiates the actual forward value. *)
+  let loss_at p =
+    T.lookup (A.value (A.bce_loss (A.make (scalar p)) (scalar 0.3))) []
+  in
+  let p = A.make (scalar 0.6) in
+  A.backward (A.bce_loss p (scalar 0.3));
+  let h = 1e-6 in
+  assert_close
+    (T.lookup (A.grad p) [])
+    ((loss_at (0.6 +. h) -. loss_at (0.6 -. h)) /. (2. *. h))
+
+let test_bce_endpoints () =
+  let assert_finite x =
+    assert (classify_float x <> FP_nan && classify_float x <> FP_infinite)
+  in
+  List.iter
+    (fun (p, y) ->
+      let pred = A.make (scalar p) in
+      let loss = A.bce_loss pred (scalar y) in
+      assert_finite (T.lookup (A.value loss) []);
+      A.backward loss;
+      assert_tensor (A.grad pred) (scalar 0.))
+    [ (0., 0.); (0., 1.); (1., 0.); (1., 1.) ];
+  let logits = A.make (vector [ -1000.; 1000. ]) in
+  let loss = A.bce_loss (A.sigmoid logits) (vector [ 1.; 0. ]) in
+  assert_finite (T.lookup (A.value loss) []);
+  A.backward loss;
+  assert_tensor (A.grad logits) (T.zeroes [ 2 ])
+
 let test_invalid_shapes () =
   let a = A.make (T.ones [ 2; 3 ]) in
   let b = A.make (T.ones [ 3; 2 ]) in
@@ -166,6 +204,8 @@ let () =
       ("distinct equal nodes", test_distinct_equal_nodes);
       ("repeated backward", test_repeated_backward);
       ("nested MSE", test_nested_mse);
+      ("BCE loss and gradients", test_bce_loss);
+      ("BCE endpoints", test_bce_endpoints);
       ("invalid shapes", test_invalid_shapes);
     ];
   print_endline "Autograd module tests passed"

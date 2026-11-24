@@ -45,6 +45,16 @@ val mse_loss : t -> float Tensor.tensor -> t
 
     @raise Assert_failure if the prediction and target shapes differ. *)
 
+val bce_loss : t -> float Tensor.tensor -> t
+(** [bce_loss pred target] returns a scalar node holding the mean binary
+    cross-entropy over all elements. Both tensors must be nonempty, have the
+    same shape, and contain probabilities in [0, 1]. Targets are constants.
+    Predictions are clipped to [1e-7, 1 - 1e-7] for numerical stability.
+    Backpropagation uses zero derivative where predictions are clipped,
+    including at either clipping boundary.
+
+    @raise Assert_failure if the prediction and target shapes differ. *)
+
 val backward : t -> unit
 (** [backward loss] computes the gradients of the scalar [loss] with respect to
     each node it depends on. The call replaces the stored gradients for those

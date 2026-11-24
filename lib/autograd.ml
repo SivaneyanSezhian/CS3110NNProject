@@ -51,19 +51,20 @@ let matmul a b =
   assert (List.length a_dims = 2 && List.length b_dims = 2);
   let fst = function
     | x :: _ -> x
-    | _ -> failwith "Empty list"
+    | _ -> failwith "Not enough elements in list"
   in
   let snd = function
     | _ :: y :: _ -> y
-    | _ -> failwith "List has fewer than two elements"
+    | _ -> failwith "Not enough elements in list"
   in
   assert (snd a_dims = fst b_dims);
   let value = T.matmul a.value b.value in
   let out = make value in
   out.backward_fn <-
     (fun () ->
-      (* For C = AB and upstream gradient G, the two contributions are G times B
-         transposed and A transposed times G. *)
+      (* For C = AB and upstream gradient G, the two contributions to the
+         gradients of A and B are G times B transposed and A transposed times G
+         respectively. *)
       let a_t = T.swap_dims a.value 0 1 in
       let b_t = T.swap_dims b.value 0 1 in
       let grad_a = T.matmul out.grad b_t in
@@ -108,6 +109,46 @@ let mse_loss pred target =
       let upstream = T.lookup out.grad [] in
       let grad_pred =
         T.pointwise (fun x -> upstream *. (2. *. x /. num)) error
+      in
+      accumulate pred grad_pred);
+  out.inputs <- [ pred ];
+  out
+
+let bce_loss pred target =
+  assert (T.same_dims pred.value target);
+  let pred_dims = T.get_dims pred.value in
+  let ones = T.ones pred_dims in
+  let epsilon = 1e-7 in
+  let upper = 1. -. epsilon in
+  (* Keep both logarithms and the gradient denominator finite. *)
+  let p = T.pointwise (fun x -> max epsilon (min upper x)) pred.value in
+  let pc = T.pointwise2 ( -. ) ones p in
+  let log_p = T.pointwise log p in
+  let log_pc = T.pointwise log pc in
+  let y = target in
+  let yc = T.pointwise2 ( -. ) ones y in
+  let first_term = T.pointwise2 ( *. ) y log_p in
+  let second_term = T.pointwise2 ( *. ) yc log_pc in
+  let loss_vec = T.pointwise2 ( +. ) first_term second_term in
+  let sum = T.sum loss_vec in
+  let num = float_of_int (T.size loss_vec) in
+  let loss_value = -.sum /. num in
+  let out = make (T.make_tensor [] (fun _ -> loss_value)) in
+  out.backward_fn <-
+    (fun () ->
+      let diff = T.pointwise2 ( -. ) p y in
+      let denom = T.pointwise2 ( *. ) p pc in
+      let quot = T.pointwise2 ( /. ) diff denom in
+      let upstream = T.lookup out.grad [] in
+      let grad_pred =
+        T.pointwise (fun q -> upstream *. q /. num) quot
+      in
+      (* Clipping is constant outside the interval. At either boundary, use
+         the zero derivative convention. *)
+      let grad_pred =
+        T.pointwise2
+          (fun x g -> if x > epsilon && x < upper then g else 0.)
+          pred.value grad_pred
       in
       accumulate pred grad_pred);
   out.inputs <- [ pred ];
