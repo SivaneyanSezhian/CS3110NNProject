@@ -2,6 +2,8 @@ type tensor = float Tensor.tensor
 
 type forward = Autograd.t list -> tensor -> Autograd.t
 
+type loss_fn = Autograd.t -> tensor -> Autograd.t
+
 type history = {
   train_losses : float list;
   validation_losses : float list option;
@@ -21,14 +23,14 @@ let update_parameters learning_rate params =
         weights gradient)
     params
 
-let train_step ~learning_rate ~forward ~parameters ~inputs ~targets =
+let train_step ~learning_rate ~forward ~loss_fn ~parameters ~inputs ~targets =
   check_learning_rate learning_rate;
   (match parameters with
   | [] -> invalid_arg "train_step requires at least one parameter"
   | _ -> ());
   let nodes = List.map Autograd.make parameters in
   let prediction = forward nodes inputs in
-  let loss = Autograd.mse_loss prediction targets in
+  let loss = loss_fn prediction targets in
   Autograd.backward loss;
   let updated = update_parameters learning_rate nodes in
   let loss_value = Tensor.lookup (Autograd.value loss) [] in
@@ -38,13 +40,13 @@ let predict ~forward ~parameters ~inputs =
   let nodes = List.map Autograd.make parameters in
   Autograd.value (forward nodes inputs)
 
-let evaluate ~forward ~parameters ~inputs ~targets =
+let evaluate ~forward ~loss_fn ~parameters ~inputs ~targets =
   let nodes = List.map Autograd.make parameters in
   let prediction = forward nodes inputs in
-  let loss = Autograd.mse_loss prediction targets in
+  let loss = loss_fn prediction targets in
   Tensor.lookup (Autograd.value loss) []
 
-let train ?validation ~learning_rate ~epochs ~forward ~parameters ~inputs
+let train ?validation ~learning_rate ~epochs ~forward ~loss_fn ~parameters ~inputs
     ~targets () =
   if epochs <= 0 then invalid_arg "epochs must be positive";
   check_learning_rate learning_rate;
@@ -58,17 +60,17 @@ let train ?validation ~learning_rate ~epochs ~forward ~parameters ~inputs
       (current, { train_losses = List.rev train_rev; validation_losses })
     else
       let updated, _ =
-        train_step ~learning_rate ~forward ~parameters:current ~inputs ~targets
+        train_step ~learning_rate ~forward ~loss_fn ~parameters:current ~inputs ~targets
       in
       (* Record losses of the updated model, after this epoch's weight update. *)
       let train_loss =
-        evaluate ~forward ~parameters:updated ~inputs ~targets
+        evaluate ~forward ~loss_fn ~parameters:updated ~inputs ~targets
       in
       let validation_rev =
         match validation with
         | None -> validation_rev
         | Some (validation_inputs, validation_targets) ->
-            evaluate ~forward ~parameters:updated ~inputs:validation_inputs
+            evaluate ~forward ~loss_fn ~parameters:updated ~inputs:validation_inputs
               ~targets:validation_targets
             :: validation_rev
       in

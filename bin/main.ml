@@ -89,7 +89,7 @@ let training_message () =
     learning_rate
 
 let trained_parameters, history =
-  Tr.train ~validation:(x_val, y_val) ~learning_rate ~epochs ~forward
+  Tr.train ~loss_fn:Autograd.mse_loss ~validation:(x_val, y_val) ~learning_rate ~epochs ~forward
     ~parameters:params ~inputs:x_train ~targets:y_train ()
 
 (** Reports the results of the trained model to the user. *)
@@ -101,5 +101,5 @@ let report () =
   | Some losses ->
       Printf.printf "Validation MSE: %.6f\n" (List.hd (List.rev losses)));
   Printf.printf "Test MSE: %.6f\n"
-    (Tr.evaluate ~forward ~parameters:trained_parameters ~inputs:x_test
+    (Tr.evaluate ~loss_fn:Autograd.mse_loss ~forward ~parameters:trained_parameters ~inputs:x_test
        ~targets:y_test)

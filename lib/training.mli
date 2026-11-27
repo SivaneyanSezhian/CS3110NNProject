@@ -6,11 +6,13 @@ type tensor = float Tensor.tensor
 
 type forward = Autograd.t list -> tensor -> Autograd.t
 
+type loss_fn = Autograd.t -> tensor -> Autograd.t
+
 type history = {
   train_losses : float list;
-  (** Training MSE after each epoch's parameter update. *)
+  (** Training loss after each epoch's parameter update. *)
   validation_losses : float list option;
-  (** Validation MSE after each epoch, if validation data was supplied. *)
+  (** Validation loss after each epoch, if validation data was supplied. *)
 }
 
 val update_parameters : float -> Autograd.t list -> tensor list
@@ -19,12 +21,13 @@ val update_parameters : float -> Autograd.t list -> tensor list
 val train_step :
   learning_rate:float ->
   forward:forward ->
+  loss_fn:loss_fn ->
   parameters:tensor list ->
   inputs:tensor ->
   targets:tensor ->
   tensor list * float
 (** Perform one full-batch gradient descent step. Returns updated parameters
-    and the MSE calculated BEFORE the update. *)
+    and the loss calculated BEFORE the update. *)
 
 val predict :
   forward:forward -> parameters:tensor list -> inputs:tensor -> tensor
@@ -32,17 +35,19 @@ val predict :
 
 val evaluate :
   forward:forward ->
+  loss_fn:loss_fn ->
   parameters:tensor list ->
   inputs:tensor ->
   targets:tensor ->
   float
-(** Return the mean squared error for the supplied data. *)
+(** Return the loss for the supplied data. *)
 
 val train :
   ?validation:(tensor * tensor) ->
   learning_rate:float ->
   epochs:int ->
   forward:forward ->
+  loss_fn:loss_fn ->
   parameters:tensor list ->
   inputs:tensor ->
   targets:tensor ->
